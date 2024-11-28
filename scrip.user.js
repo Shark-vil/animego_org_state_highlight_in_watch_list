@@ -7,6 +7,8 @@
 // @icon         https://raw.githubusercontent.com/Shark-vil/animego_scraper_color_indication_of_viewed/refs/heads/master/icon.png
 // @match        https://animego.org/*
 // @grant        none
+// @updateURL    https://github.com/Shark-vil/animego_scraper_color_indication_of_viewed/raw/refs/heads/master/scrip.user.js
+// @downloadURL  https://github.com/Shark-vil/animego_scraper_color_indication_of_viewed/raw/refs/heads/master/scrip.user.js
 // @require      https://code.jquery.com/jquery-3.7.1.min.js
 // ==/UserScript==
 
