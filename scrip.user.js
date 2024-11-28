@@ -4,6 +4,7 @@
 // @version      1.0
 // @description  Скрипл для сайта AnimeGo.org, который помечает или скрывает в общем списке уже просмотренные аниме.
 // @author       Shark_vil
+// @icon         https://raw.githubusercontent.com/Shark-vil/animego_scraper_color_indication_of_viewed/refs/heads/master/icon.png
 // @match        https://animego.org/*
 // @grant        none
 // @require      https://code.jquery.com/jquery-3.7.1.min.js
