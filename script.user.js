@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AnimeGo Scraper - Color Indication of Viewed
 // @namespace    https://github.com/Shark-vil/animego_scraper_color_indication
-// @version      1.2.12
+// @version      1.2.13
 // @description  Скрипт для сайта AnimeGo.org, который помечает или скрывает в общем списке уже просмотренные аниме.
 // @author       Shark_vil
 // @icon         https://raw.githubusercontent.com/Shark-vil/animego_scraper_color_indication_of_viewed/refs/heads/master/icon.png
@@ -160,20 +160,20 @@
             // Если уже есть активный наблюдатель, отключаем его
             if (OBSERVER_MONITOR_ANIME_LIST_VIEW) {
                 OBSERVER_MONITOR_ANIME_LIST_VIEW.disconnect();
-                console.log("Предыдущий наблюдатель отключен.");
+                // console.log("Предыдущий наблюдатель отключен.");
             }
     
             // Создаем нового наблюдателя
             OBSERVER_MONITOR_ANIME_LIST_VIEW = new MutationObserver(() => highlightWatchedAnime());
             OBSERVER_MONITOR_ANIME_LIST_VIEW.observe(targetNode, { childList: true, subtree: true });
-            console.log("Наблюдатель за изменениями запущен.");
+            // console.log("Наблюдатель за изменениями запущен.");
         };
     
         // Проверяем узел с интервалом
         setInterval(() => {
             const targetNode = document.querySelector("#anime-list-container");
             if (targetNode && targetNode !== OBSERVER_MONITOR_ANIME_LIST_VIEW?.target) {
-                console.log("Перезапуск наблюдателя...");
+                // console.log("Перезапуск наблюдателя...");
                 observeTargetNode();
             }
         }, 1000);
@@ -195,7 +195,7 @@
         return new Promise((resolve, reject) => {
             $iframe.on("load", async () => {
                 const iframeDocument = $iframe[0].contentDocument;
-                const $tableBody = $(iframeDocument).find('tbody[data-loaded="true"]');
+                const $tableBody = $(iframeDocument).find('tbody');
         
                 const animeData = {
                     category: animeCategory,
