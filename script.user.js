@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AnimeGo Scraper - Color Indication of Viewed
 // @namespace    https://github.com/Shark-vil/animego_scraper_color_indication
-// @version      1.3.0
+// @version      1.3.1
 // @description  Скрипт для сайта AnimeGo.org, который помечает или скрывает в общем списке уже просмотренные аниме.
 // @author       Shark_vil
 // @icon         https://raw.githubusercontent.com/Shark-vil/animego_scraper_color_indication_of_viewed/refs/heads/master/icon.png
@@ -19,12 +19,12 @@
 
     const STORAGE_SETTINGS = "animego_ext_scraper_settings";
     const PROFILE_CATEGORIES = [
-        { category: 'watching', text: "смотрю", color: '#d4edda' },
-        { category: 'completed', text: "просмотрено", color: '#d1ecf1' },
-        { category: 'onhold', text: "отложено", color: '#ebeef1' },
-        { category: 'dropped', text: "брошено", color: '#f8d7da' },
-        { category: 'planned', text: "запланировано", color: '#fff3cd' },
-        { category: 'rewatching', text: "пересматриваю", color: '#d1ecf1' }
+        { categoryName: 'watching', text: "смотрю", color: '#d4edda' },
+        { categoryName: 'completed', text: "просмотрено", color: '#d1ecf1' },
+        { categoryName: 'onhold', text: "отложено", color: '#ebeef1' },
+        { categoryName: 'dropped', text: "брошено", color: '#f8d7da' },
+        { categoryName: 'planned', text: "запланировано", color: '#fff3cd' },
+        { categoryName: 'rewatching', text: "пересматриваю", color: '#d1ecf1' }
     ];
     const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     let OBSERVER_MONITOR_ANIME_LIST_VIEW;
@@ -49,7 +49,7 @@
     const clearStorage = () => {
         if (confirm("Вы уверены, что хотите очистить хранилище?")) {
             PROFILE_CATEGORIES.forEach(item => {
-                localStorage.removeItem(item.category);
+                localStorage.removeItem(item.categoryName);
             });
             localStorage.removeItem('animego_ext_scraper_anime_list');
             alert("Хранилище очищено.");
@@ -95,8 +95,8 @@
         const uniqueColors = new Set();
         const uniqueCategories = new Set();
 
-        categories.forEach((category, index) => {
-            const animeData = getStorage(category);
+        categories.forEach((categoryName, index) => {
+            const animeData = getStorage(categoryName);
 
             // Добавляем уникальный цвет
             if (animeData.color && !uniqueColors.has(animeData.color)) {
@@ -105,9 +105,9 @@
             }
 
             // Добавляем уникальную категорию
-            if (!uniqueCategories.has(category)) {
-                uniqueCategories.add(category);
-                unifiedData.categories[index] = category;
+            if (!uniqueCategories.has(categoryName)) {
+                uniqueCategories.add(categoryName);
+                unifiedData.categories[index] = categoryName;
             }
 
             // Добавляем ссылки
@@ -115,7 +115,7 @@
                 unifiedData.links.push({
                     link: link,
                     color: [...uniqueColors].indexOf(animeData.color),
-                    category: [...uniqueCategories].indexOf(category)
+                    category: [...uniqueCategories].indexOf(categoryName)
                 });
             });
         });
@@ -127,7 +127,7 @@
     // Выделяет просмотренные аниме
     const highlightWatchedAnime = () => {
         if (!LOADED_DATA) {
-            const categories = PROFILE_CATEGORIES.map(item => item.category);
+            const categories = PROFILE_CATEGORIES.map(item => item.categoryName);
             LOADED_DATA = generateUnifiedLinkData(...categories);
             console.log(LOADED_DATA);
         }
@@ -137,7 +137,8 @@
             const matchedLink = LOADED_DATA.links.find(linkObj => linkObj.link === animeLink);
     
             if (matchedLink) {
-                if (SETTINGS.hiddenCompleted) {
+                const categoryName = LOADED_DATA.colors[matchedLink.category]
+                if (SETTINGS.hiddenCompleted && (categoryName === 'completed' || categoryName === 'dropped')) {
                     $(element).closest('[class^="col-"]').attr("hidden", true);
                 } else {
                     const colorIndex = matchedLink.color;
@@ -198,7 +199,7 @@
                 const $tableBody = $(iframeDocument).find('tbody');
         
                 const animeData = {
-                    category: animeCategory,
+                    categoryName: animeCategory,
                     color: color,
                     links: []
                 };
@@ -246,12 +247,12 @@
             const animeLink = window.location.pathname;
 
             PROFILE_CATEGORIES.forEach(item => {
-                removeLinkFromStorage(item.category, animeLink);
+                removeLinkFromStorage(item.categoryName, animeLink);
             });
 
             PROFILE_CATEGORIES.forEach((item) => {
                 if (item.text === buttonText.toLowerCase()) {
-                    addLinkToAnimeDataInStorage(item.category, animeLink);
+                    addLinkToAnimeDataInStorage(item.categoryName, animeLink);
                     return;
                 }
             });            
@@ -316,16 +317,16 @@
 
     const processCategories = async () => {
         for (const item of PROFILE_CATEGORIES) {
-            if (!getStorage(item.category)) {
-                console.log(`Список "${item.category}" аниме отсутствует. Запуск сканера.`);
+            if (!getStorage(item.categoryName)) {
+                console.log(`Список "${item.categoryName}" аниме отсутствует. Запуск сканера.`);
                 try {
-                    await scanAnimeLinks(item.category, item.color);
+                    await scanAnimeLinks(item.categoryName, item.color);
                 } catch (error) {
-                    console.error(`Ошибка при обработке категории "${item.category}":`, error);
+                    console.error(`Ошибка при обработке категории "${item.categoryName}":`, error);
                 }
                 await delay(500);
             } else {
-                console.log(`Список аниме для категории "${item.category}" уже сохранен.`);
+                console.log(`Список аниме для категории "${item.categoryName}" уже сохранен.`);
             }
         }
     };
