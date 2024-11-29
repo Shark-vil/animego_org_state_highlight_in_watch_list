@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AnimeGo Scraper - Color Indication of Viewed
 // @namespace    https://github.com/Shark-vil/animego_scraper_color_indication
-// @version      1.2.7
+// @version      1.2.8
 // @description  Скрипт для сайта AnimeGo.org, который помечает или скрывает в общем списке уже просмотренные аниме.
 // @author       Shark_vil
 // @icon         https://raw.githubusercontent.com/Shark-vil/animego_scraper_color_indication_of_viewed/refs/heads/master/icon.png
@@ -19,12 +19,12 @@
 
     const STORAGE_SETTINGS = "animego_ext_scraper_settings";
     const PROFILE_CATEGORIES = [
-        // { category: 'watching', color: '#d4edda' },
+        { category: 'watching', color: '#d4edda' },
         { category: 'completed', color: '#d1ecf1' },
-        // { category: 'onhold', color: '#ebeef1' },
-        // { category: 'dropped', color: '#f8d7da' },
-        // { category: 'planned', color: '#fff3cd' },
-        // { category: 'rewatching', color: '#d1ecf1' }
+        { category: 'onhold', color: '#ebeef1' },
+        { category: 'dropped', color: '#f8d7da' },
+        { category: 'planned', color: '#fff3cd' },
+        { category: 'rewatching', color: '#d1ecf1' }
     ];
     const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     let OBSERVER_MONITOR_ANIME_LIST_VIEW;
@@ -58,10 +58,8 @@
 
     // Добавляет новые ссылки в список
     const addAnimeDataToStorage = (animeCategory, animeData) => {
-        const existingAnimeData = getStorage(animeCategory);
-        existingAnimeData.links = [...new Set([...existingAnimeData.links, ...animeData.links])];
-        setStorage(animeCategory, existingAnimeData);
-        console.log("Ссылки сохранены:", existingAnimeData);
+        setStorage(animeCategory, animeData);
+        console.log("Ссылки сохранены:", animeCategory);
     };
 
     // Удаляет ссылку из списка
@@ -211,8 +209,8 @@
                 });
         
                 animeData.links = [...new Set(animeData.links)];
-                addAnimeDataToStorage(animeData);
                 console.log("Собранные данные:", animeData);
+                addAnimeDataToStorage(animeCategory, animeData);
         
                 $iframe.remove();
                 resolve(animeData);
