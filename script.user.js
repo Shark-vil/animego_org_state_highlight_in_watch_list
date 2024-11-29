@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AnimeGo Scraper - Color Indication of Viewed
 // @namespace    https://github.com/Shark-vil/animego_scraper_color_indication
-// @version      1.2.0
+// @version      1.2.1
 // @description  Скрипт для сайта AnimeGo.org, который помечает или скрывает в общем списке уже просмотренные аниме.
 // @author       Shark_vil
 // @icon         https://raw.githubusercontent.com/Shark-vil/animego_scraper_color_indication_of_viewed/refs/heads/master/icon.png
@@ -26,6 +26,7 @@
         { category: 'planned', color: '#fff3cd' },
         { category: 'rewatching', color: '#d1ecf1' }
     ];
+    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     let OBSERVER_MONITOR_ANIME_LIST_VIEW;
     let LOADED_DATA = [];
     let SETTINGS = {
@@ -44,8 +45,19 @@
         return getValue ? JSON.parse(getValue) : [];
     };
 
+    // Очищает локальное хранилище
+    const clearStorage = () => {
+        if (confirm("Вы уверены, что хотите очистить хранилище?")) {
+            PROFILE_CATEGORIES.forEach(item => {
+                localStorage.removeItem(item.category);
+            });
+            localStorage.removeItem('animego_ext_scraper_anime_list');
+            alert("Хранилище очищено.");
+        }
+    };
+
     // Добавляет новые ссылки в список
-    const addLinksToCookie = (animeCategory, animeData) => {
+    const addAnimeDataToStorage = (animeCategory, animeData) => {
         const existingAnimeData = getStorage(animeCategory);
         existingAnimeData.links = [...new Set([...existingAnimeData.links, ...animeData.links])];
         setStorage(animeCategory, existingAnimeData);
@@ -157,50 +169,54 @@
     const scanAnimeLinks = async (animeCategory, color) => {
         const username = $('a.nav-link.text-truncate[href="/profile/"]').text().trim();
         if (!username) return console.error("Имя пользователя не найдено.");
-    
+        
         const url = `https://animego.org/user/${username}/mylist/anime/${animeCategory}`;
         console.log(`Загрузка списка аниме с ${url}`);
-    
+        
         const $iframe = $('<iframe>', { 
             src: url, 
             css: { visibility: "hidden", position: "fixed", top: "-1000px", left: "-1000px" } 
         }).appendTo("body");
-    
-        $iframe.on("load", async () => {
-            const iframeDocument = $iframe[0].contentDocument;
-            const $tableBody = $(iframeDocument).find('tbody[data-loaded="true"]');
-    
-            if (!$tableBody.length) {
-                console.error("Таблица с аниме не найдена.");
+        
+        return new Promise((resolve, reject) => {
+            $iframe.on("load", async () => {
+                const iframeDocument = $iframe[0].contentDocument;
+                const $tableBody = $(iframeDocument).find('tbody[data-loaded="true"]');
+        
+                if (!$tableBody.length) {
+                    console.error("Таблица с аниме не найдена.");
+                    $iframe.remove();
+                    reject(new Error("Таблица с аниме не найдена"));
+                    return;
+                }
+        
+                const animeData = {
+                    category: animeCategory,
+                    color: color,
+                    links: []
+                };
+        
+                let lastCount = 0;
+        
+                while (true) {
+                    $iframe[0].contentWindow.scrollTo(0, iframeDocument.body.scrollHeight);
+                    await delay(1000);
+                    const currentCount = $tableBody.find("tr").length;
+                    if (currentCount === lastCount) break;
+                    lastCount = currentCount;
+                }
+        
+                $tableBody.find('a[href^="/anime/"]').each((_, link) => {
+                    animeData.links.push($(link).attr("href"));
+                });
+        
+                animeData.links = [...new Set(animeData.links)];
+                addAnimeDataToStorage(animeData);
+                console.log("Собранные данные:", animeData);
+        
                 $iframe.remove();
-                return;
-            }
-    
-            const animeData = {
-                category: animeCategory,
-                color: color,
-                links: []
-            };
-    
-            let lastCount = 0;
-    
-            while (true) {
-                $iframe[0].contentWindow.scrollTo(0, iframeDocument.body.scrollHeight);
-                await new Promise(r => setTimeout(r, 1000));
-                const currentCount = $tableBody.find("tr").length;
-                if (currentCount === lastCount) break;
-                lastCount = currentCount;
-            }
-    
-            $tableBody.find('a[href^="/anime/"]').each((_, link) => {
-                animeData.links.push($(link).attr("href"));
+                resolve(animeData);
             });
-    
-            animeData.links = [...new Set(animeData.links)]; // Удаляем дубликаты
-            addLinksToCookie(animeData);
-            console.log("Собранные данные:", animeData);
-    
-            $iframe.remove();
         });
     };
     
@@ -214,22 +230,11 @@
             const buttonText = $('.my-list .text-underline-hover').text().trim();
             const animeLink = window.location.pathname;
 
-            if (buttonText.includes("Просмотрено")) addLinksToCookie([animeLink]);
+            if (buttonText.includes("Просмотрено")) addAnimeDataToStorage([animeLink]);
             else removeLinkFromCookie(animeLink);
         });
 
         observer.observe(targetNode, { childList: true, subtree: true });
-    };
-
-    // Очищает локальное хранилище
-    const clearStorage = () => {
-        if (confirm("Вы уверены, что хотите очистить хранилище?")) {
-            PROFILE_CATEGORIES.forEach(item => {
-                localStorage.removeItem(item.category);
-            });
-            localStorage.removeItem('animego_ext_scraper_anime_list');
-            alert("Хранилище очищено.");
-        }
     };
 
     // Инициализация меню
@@ -286,6 +291,22 @@
         });
     };
 
+    const processCategories = async () => {
+        for (const item of PROFILE_CATEGORIES) {
+            if (!getStorage(item.category).length) {
+                console.log(`Список "${item.category}" аниме отсутствует. Запуск сканера.`);
+                try {
+                    await scanAnimeLinks(item.category, item.color);
+                } catch (error) {
+                    console.error(`Ошибка при обработке категории "${item.category}":`, error);
+                }
+                await delay(1000);
+            } else {
+                console.log(`Список аниме для категории "${item.category}" уже сохранен.`);
+            }
+        }
+    };
+
     const getSettings = getStorage(STORAGE_SETTINGS);
     if (getSettings) {
         SETTINGS = getSettings;
@@ -293,14 +314,7 @@
 
     if (SETTINGS.scriptEnabled) {
         // Инициализация
-        PROFILE_CATEGORIES.forEach(item => {
-            if (!getStorage(item.category).length) {
-                console.log(`Список "${item.category}" аниме отсутствует. Запуск сканера.`);
-                scanAnimeLinks(item.category, item.color);
-            } else {
-                console.log("Список аниме уже сохранен.");
-            }
-        });
+        processCategories();
 
         if (window.location.pathname === '/anime' || window.location.pathname.startsWith('/anime/filter')) {
             highlightWatchedAnime();
