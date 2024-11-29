@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AnimeGo Scraper - Color Indication of Viewed
 // @namespace    https://github.com/Shark-vil/animego_scraper_color_indication
-// @version      1.3.1
+// @version      1.3.2
 // @description  Скрипт для сайта AnimeGo.org, который помечает или скрывает в общем списке уже просмотренные аниме.
 // @author       Shark_vil
 // @icon         https://raw.githubusercontent.com/Shark-vil/animego_scraper_color_indication_of_viewed/refs/heads/master/icon.png
@@ -137,8 +137,8 @@
             const matchedLink = LOADED_DATA.links.find(linkObj => linkObj.link === animeLink);
     
             if (matchedLink) {
-                const categoryName = LOADED_DATA.colors[matchedLink.category]
-                if (SETTINGS.hiddenCompleted && (categoryName === 'completed' || categoryName === 'dropped')) {
+                const categoryName = LOADED_DATA.categories[matchedLink.category]
+                if (SETTINGS.hiddenCompleted && (categoryName == 'completed' || categoryName == 'dropped')) {
                     $(element).closest('[class^="col-"]').attr("hidden", true);
                 } else {
                     const colorIndex = matchedLink.color;
