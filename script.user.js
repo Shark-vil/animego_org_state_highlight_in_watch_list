@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         AnimeGo Scraper - Color Indication of Viewed
+// @name         AnimeGo Highlight - Color Indication of Viewed
 // @namespace    https://github.com/Shark-vil/animego_org_state_highlight_in_watch_list
 // @version      1.3.3
 // @description  Скрипт для сайта AnimeGo.org, который помечает или скрывает в общем списке уже просмотренные аниме.

@@ -1,6 +1,6 @@
 {
     "manifest_version": 3,
-    "name": "AnimeGo Scraper - Color Indication of Viewed",
+    "name": "AnimeGo Highlight - Color Indication of Viewed",
     "version": "1.3.2",
     "description": "Скрипт для сайта AnimeGo.org, который помечает или скрывает в общем списке уже просмотренные аниме.",
     "author": "Shark_vil",
