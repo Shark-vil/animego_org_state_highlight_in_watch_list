@@ -14,7 +14,7 @@
 
 /* global $ */
 
-(function () {
+(async function () {
     'use strict';
 
     const STORAGE_SETTINGS = "animego_ext_scraper_settings";
