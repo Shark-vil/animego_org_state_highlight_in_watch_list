@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
-    "name": "AnimeGo Highlight - Color Indication of Viewed",
-    "version": "1.3.2",
-    "description": "Скрипт для сайта AnimeGo.org, который помечает или скрывает в общем списке уже просмотренные аниме.",
+    "name": "Animego.org - Подсветка аниме в списке цветом",
+    "version": "1.3.4",
+    "description": "Скрипт для сайта animego.org, который помечает аниме цветом состояния просмотра, а также может скрывать уже просмотренные или брошенные аниме.",
     "author": "Shark_vil",
     "permissions": [
       "storage",
