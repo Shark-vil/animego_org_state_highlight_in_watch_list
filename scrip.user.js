@@ -204,7 +204,7 @@
             console.log("Список аниме уже сохранен.");
         }
 
-        if (window.location.pathname === '/anime') {
+        if (window.location.pathname === '/anime' || window.location.pathname.startsWith('/anime/filter')) {
             highlightWatchedAnime();
             monitorAnimeListChanges();
         }
