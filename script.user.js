@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AnimeGo Scraper - Color Indication of Viewed
 // @namespace    https://github.com/Shark-vil/animego_scraper_color_indication
-// @version      1.1.0
+// @version      1.2.0
 // @description  Скрипт для сайта AnimeGo.org, который помечает или скрывает в общем списке уже просмотренные аниме.
 // @author       Shark_vil
 // @icon         https://raw.githubusercontent.com/Shark-vil/animego_scraper_color_indication_of_viewed/refs/heads/master/icon.png
@@ -17,58 +17,110 @@
 (function () {
     'use strict';
 
-    const COOKIE_NAME = "animego_ext_scraper_anime_list";
-    const COOKIE_SETTINGS = "animego_ext_scraper_settings";
-    const HIGHLIGHT_COLOR = "#d1ecf1";
+    const STORAGE_SETTINGS = "animego_ext_scraper_settings";
+    const PROFILE_CATEGORIES = [
+        { category: 'watching', color: '#d4edda' },
+        { category: 'completed', color: '#d1ecf1' },
+        { category: 'onhold', color: '#ebeef1' },
+        { category: 'dropped', color: '#f8d7da' },
+        { category: 'planned', color: '#fff3cd' },
+        { category: 'rewatching', color: '#d1ecf1' }
+    ];
     let OBSERVER_MONITOR_ANIME_LIST_VIEW;
-    let LOADDED_LINKS = [];
+    let LOADED_DATA = [];
     let SETTINGS = {
         scriptEnabled: true,
         hiddenCompleted: false
     };
 
     // Сохраняет данные в локальное хранилище
-    const setCookie = (name, value) => {
+    const setStorage = (name, value) => {
         localStorage.setItem(name, JSON.stringify(value));
     };
 
     // Извлекает данные из локального хранилища
-    const getCookie = (name) => {
-        const cookieValue = localStorage.getItem(name);
-        return cookieValue ? JSON.parse(cookieValue) : [];
+    const getStorage = (name) => {
+        const getValue = localStorage.getItem(name);
+        return getValue ? JSON.parse(getValue) : [];
     };
 
     // Добавляет новые ссылки в список
-    const addLinksToCookie = (links) => {
-        const existingLinks = getCookie(COOKIE_NAME);
-        const updatedLinks = [...new Set([...existingLinks, ...links])];
-        setCookie(COOKIE_NAME, updatedLinks);
-        console.log("Ссылки сохранены:", updatedLinks);
+    const addLinksToCookie = (animeCategory, animeData) => {
+        const existingAnimeData = getStorage(animeCategory);
+        existingAnimeData.links = [...new Set([...existingAnimeData.links, ...animeData.links])];
+        setStorage(animeCategory, existingAnimeData);
+        console.log("Ссылки сохранены:", existingAnimeData);
     };
 
     // Удаляет ссылку из списка
-    const removeLinkFromCookie = (linkToRemove) => {
-        const updatedLinks = getCookie(COOKIE_NAME).filter(link => link !== linkToRemove);
-        setCookie(COOKIE_NAME, updatedLinks);
-        console.log("Ссылки после удаления:", updatedLinks);
+    const removeLinkFromCookie = (animeCategory, linkToRemove) => {
+        const updatedAnimeData = getStorage(animeCategory).filter(animeData => animeData.link !== linkToRemove);
+        setStorage(animeCategory, updatedAnimeData);
+        console.log("Ссылки после удаления:", updatedAnimeData);
+    };
+
+    // Генерирует общий объект ссылок, цветов и категорий на основе всех категорий
+    const generateUnifiedLinkData = (...categories) => {
+        const unifiedData = {
+            colors: {},
+            categories: {},
+            links: []
+        };
+        const uniqueColors = new Set();
+        const uniqueCategories = new Set();
+
+        categories.forEach((category, index) => {
+            const animeData = getStorage(category);
+
+            // Добавляем уникальный цвет
+            if (animeData.color && !uniqueColors.has(animeData.color)) {
+                uniqueColors.add(animeData.color);
+                unifiedData.colors[index] = animeData.color;
+            }
+
+            // Добавляем уникальную категорию
+            if (!uniqueCategories.has(category)) {
+                uniqueCategories.add(category);
+                unifiedData.categories[index] = category;
+            }
+
+            // Добавляем ссылки
+            animeData.links.forEach(link => {
+                unifiedData.links.push({
+                    link: link,
+                    color: [...uniqueColors].indexOf(animeData.color),
+                    category: [...uniqueCategories].indexOf(category)
+                });
+            });
+        });
+
+        console.log("Объединенный объект:", unifiedData);
+        return unifiedData;
     };
 
     // Выделяет просмотренные аниме
     const highlightWatchedAnime = () => {
-        if (!LOADDED_LINKS || !LOADDED_LINKS.length) {
-            LOADDED_LINKS = getCookie(COOKIE_NAME);
+        if (!LOADED_DATA) {
+            const categories = PROFILE_CATEGORIES.map(item => item.category);
+            LOADED_DATA = generateUnifiedLinkData(...categories);
         }
+    
         $(".animes-list-item.media").each((_, element) => {
-            const animeLink = $(element).find("a").attr("href").replace('https://animego.org', '');
-            if (LOADDED_LINKS.includes(animeLink)) {
+            const animeLink = $(element).find("a").attr("href").replace("https://animego.org", "");
+            const matchedLink = LOADED_DATA.links.find(linkObj => linkObj.link === animeLink);
+    
+            if (matchedLink) {
                 if (SETTINGS.hiddenCompleted) {
                     $(element).closest('[class^="col-"]').attr("hidden", true);
                 } else {
-                    $(element).css("background-color", HIGHLIGHT_COLOR);
+                    const colorIndex = matchedLink.color;
+                    const highlightColor = LOADED_DATA.colors[colorIndex];
+                    $(element).css("background-color", highlightColor);
                 }
             }
         });
     };
+    
 
     // Следит за изменениями в списке аниме
     const monitorAnimeListChanges = () => {
@@ -102,24 +154,36 @@
     };
 
     // Загружает список просмотренных аниме из профиля
-    const scanAnimeLinks = async () => {
+    const scanAnimeLinks = async (animeCategory, color) => {
         const username = $('a.nav-link.text-truncate[href="/profile/"]').text().trim();
         if (!username) return console.error("Имя пользователя не найдено.");
-
-        const url = `https://animego.org/user/${username}/mylist/anime/completed`;
+    
+        const url = `https://animego.org/user/${username}/mylist/anime/${animeCategory}`;
         console.log(`Загрузка списка аниме с ${url}`);
-
-        const $iframe = $('<iframe>', { src: url, css: { visibility: "hidden", position: "fixed", top: "-1000px", left: "-1000px" } }).appendTo("body");
-
+    
+        const $iframe = $('<iframe>', { 
+            src: url, 
+            css: { visibility: "hidden", position: "fixed", top: "-1000px", left: "-1000px" } 
+        }).appendTo("body");
+    
         $iframe.on("load", async () => {
             const iframeDocument = $iframe[0].contentDocument;
             const $tableBody = $(iframeDocument).find('tbody[data-loaded="true"]');
-
-            if (!$tableBody.length) return console.error("Таблица с аниме не найдена.");
-
-            const animeLinks = [];
+    
+            if (!$tableBody.length) {
+                console.error("Таблица с аниме не найдена.");
+                $iframe.remove();
+                return;
+            }
+    
+            const animeData = {
+                category: animeCategory,
+                color: color,
+                links: []
+            };
+    
             let lastCount = 0;
-
+    
             while (true) {
                 $iframe[0].contentWindow.scrollTo(0, iframeDocument.body.scrollHeight);
                 await new Promise(r => setTimeout(r, 1000));
@@ -127,12 +191,19 @@
                 if (currentCount === lastCount) break;
                 lastCount = currentCount;
             }
-
-            $tableBody.find('a[href^="/anime/"]').each((_, link) => animeLinks.push($(link).attr("href")));
-            addLinksToCookie([...new Set(animeLinks)]);
+    
+            $tableBody.find('a[href^="/anime/"]').each((_, link) => {
+                animeData.links.push($(link).attr("href"));
+            });
+    
+            animeData.links = [...new Set(animeData.links)]; // Удаляем дубликаты
+            addLinksToCookie(animeData);
+            console.log("Собранные данные:", animeData);
+    
             $iframe.remove();
         });
     };
+    
 
     // Следит за кнопкой добавления в список
     const monitorAddToListButton = () => {
@@ -153,7 +224,10 @@
     // Очищает локальное хранилище
     const clearStorage = () => {
         if (confirm("Вы уверены, что хотите очистить хранилище?")) {
-            localStorage.removeItem(COOKIE_NAME);
+            PROFILE_CATEGORIES.forEach(item => {
+                localStorage.removeItem(item.category);
+            });
+            localStorage.removeItem('animego_ext_scraper_anime_list');
             alert("Хранилище очищено.");
         }
     };
@@ -191,7 +265,7 @@
         toggleScriptEl.on('click', (e) => {
             e.preventDefault();
             SETTINGS.scriptEnabled = !SETTINGS.scriptEnabled;
-            setCookie(COOKIE_SETTINGS, SETTINGS);
+            setStorage(STORAGE_SETTINGS, SETTINGS);
             toggleScriptEl.text(SETTINGS.scriptEnabled ? 'Выключить скрипт' : 'Включить скрипт');
             alert(`Скрипт ${SETTINGS.scriptEnabled ? 'включен' : 'выключен'}. Перезагрузите страницу.`);
         });
@@ -200,7 +274,7 @@
         toggleHiddenEl.on('click', (e) => {
             e.preventDefault();
             SETTINGS.hiddenCompleted = !SETTINGS.hiddenCompleted;
-            setCookie(COOKIE_SETTINGS, SETTINGS);
+            setStorage(STORAGE_SETTINGS, SETTINGS);
             toggleHiddenEl.text(SETTINGS.hiddenCompleted ? 'Не скрывать просмотренное' : 'Скрывать просмотренное');
             alert(`Просмотренные аниме ${SETTINGS.hiddenCompleted ? 'будут скрыты' : 'не будут скрыты'}.`);
         });
@@ -212,19 +286,21 @@
         });
     };
 
-    const getSettings = getCookie(COOKIE_SETTINGS);
+    const getSettings = getStorage(STORAGE_SETTINGS);
     if (getSettings) {
         SETTINGS = getSettings;
     }
 
     if (SETTINGS.scriptEnabled) {
         // Инициализация
-        if (!getCookie(COOKIE_NAME).length) {
-            console.log("Список аниме отсутствует. Запуск сканера.");
-            scanAnimeLinks();
-        } else {
-            console.log("Список аниме уже сохранен.");
-        }
+        PROFILE_CATEGORIES.forEach(item => {
+            if (!getStorage(item.category).length) {
+                console.log(`Список "${item.category}" аниме отсутствует. Запуск сканера.`);
+                scanAnimeLinks(item.category, item.color);
+            } else {
+                console.log("Список аниме уже сохранен.");
+            }
+        });
 
         if (window.location.pathname === '/anime' || window.location.pathname.startsWith('/anime/filter')) {
             highlightWatchedAnime();
