@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AnimeGo Scraper - Color Indication of Viewed
 // @namespace    https://github.com/Shark-vil/animego_scraper_color_indication
-// @version      1.2.1
+// @version      1.2.2
 // @description  Скрипт для сайта AnimeGo.org, который помечает или скрывает в общем списке уже просмотренные аниме.
 // @author       Shark_vil
 // @icon         https://raw.githubusercontent.com/Shark-vil/animego_scraper_color_indication_of_viewed/refs/heads/master/icon.png
@@ -200,7 +200,7 @@
         
                 while (true) {
                     $iframe[0].contentWindow.scrollTo(0, iframeDocument.body.scrollHeight);
-                    await delay(1000);
+                    await delay(1500);
                     const currentCount = $tableBody.find("tr").length;
                     if (currentCount === lastCount) break;
                     lastCount = currentCount;
@@ -213,6 +213,8 @@
                 animeData.links = [...new Set(animeData.links)];
                 addAnimeDataToStorage(animeData);
                 console.log("Собранные данные:", animeData);
+
+                await delay(500);
         
                 $iframe.remove();
                 resolve(animeData);
@@ -300,7 +302,7 @@
                 } catch (error) {
                     console.error(`Ошибка при обработке категории "${item.category}":`, error);
                 }
-                await delay(1000);
+                await delay(2000);
             } else {
                 console.log(`Список аниме для категории "${item.category}" уже сохранен.`);
             }
