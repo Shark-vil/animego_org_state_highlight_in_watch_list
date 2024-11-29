@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AnimeGo Scraper - Color Indication of Viewed
 // @namespace    https://github.com/Shark-vil/animego_scraper_color_indication
-// @version      1.0
+// @version      1.1.0
 // @description  Скрипл для сайта AnimeGo.org, который помечает или скрывает в общем списке уже просмотренные аниме.
 // @author       Shark_vil
 // @icon         https://raw.githubusercontent.com/Shark-vil/animego_scraper_color_indication_of_viewed/refs/heads/master/icon.png
