@@ -22,7 +22,7 @@
 ## Как установить?
 
 1. Установите расширение [Tampermonkey](https://www.tampermonkey.net).
-2. Нажмите сюда [Открыть скрипт](https://github.com/Shark-vil/animego_scraper_color_indication_of_viewed/raw/refs/heads/master/scrip.user.js).
+2. Нажмите сюда [Открыть скрипт](https://github.com/Shark-vil/animego_scraper_color_indication_of_viewed/raw/refs/heads/master/script.user.js).
 
 ---
 
