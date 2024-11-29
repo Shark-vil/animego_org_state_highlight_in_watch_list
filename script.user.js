@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AnimeGo Scraper - Color Indication of Viewed
 // @namespace    https://github.com/Shark-vil/animego_scraper_color_indication
-// @version      1.2.5
+// @version      1.2.6
 // @description  Скрипт для сайта AnimeGo.org, который помечает или скрывает в общем списке уже просмотренные аниме.
 // @author       Shark_vil
 // @icon         https://raw.githubusercontent.com/Shark-vil/animego_scraper_color_indication_of_viewed/refs/heads/master/icon.png
@@ -177,48 +177,58 @@
             src: url, 
             css: { visibility: "hidden", position: "fixed", top: "-1000px", left: "-1000px" } 
         }).appendTo("body");
-        
-        return new Promise((resolve, reject) => {
-            $iframe.on("load", async () => {
-                await delay(1500);
 
-                const iframeDocument = $iframe[0].contentDocument;
-                const $tableBody = $(iframeDocument).find('tbody[data-loaded="true"]');
-        
-                if (!$tableBody.length) {
-                    console.error("Таблица с аниме не найдена.");
-                    $iframe.remove();
-                    reject(new Error("Таблица с аниме не найдена"));
-                    return;
-                }
-        
-                const animeData = {
-                    category: animeCategory,
-                    color: color,
-                    links: []
-                };
-        
-                let lastCount = 0;
-        
-                while (true) {
-                    $iframe[0].contentWindow.scrollTo(0, iframeDocument.body.scrollHeight);
-                    await delay(1500);
-                    const currentCount = $tableBody.find("tr").length;
-                    if (currentCount === lastCount) break;
-                    lastCount = currentCount;
-                }
-        
-                $tableBody.find('a[href^="/anime/"]').each((_, link) => {
-                    animeData.links.push($(link).attr("href"));
-                });
-        
-                animeData.links = [...new Set(animeData.links)];
-                addAnimeDataToStorage(animeData);
-                console.log("Собранные данные:", animeData);
-        
+        const getTimestamp = () => Math.floor(Date.now() / 1000);
+
+        let hasLoaded = false;
+        let timeOut =  getTimestamp() + 15;
+
+        $iframe.on("load", async () => {
+            const iframeDocument = $iframe[0].contentDocument;
+            const $tableBody = $(iframeDocument).find('tbody[data-loaded="true"]');
+    
+            if (!$tableBody.length) {
+                console.error("Таблица с аниме не найдена.");
                 $iframe.remove();
-                resolve(animeData);
+                hasLoaded = true;
+                return;
+            }
+    
+            const animeData = {
+                category: animeCategory,
+                color: color,
+                links: []
+            };
+    
+            let lastCount = 0;
+    
+            while (true) {
+                $iframe[0].contentWindow.scrollTo(0, iframeDocument.body.scrollHeight);
+                await delay(1000);
+                const currentCount = $tableBody.find("tr").length;
+                if (currentCount === lastCount) break;
+                lastCount = currentCount;
+            }
+    
+            $tableBody.find('a[href^="/anime/"]').each((_, link) => {
+                animeData.links.push($(link).attr("href"));
             });
+    
+            animeData.links = [...new Set(animeData.links)];
+            addAnimeDataToStorage(animeData);
+            console.log("Собранные данные:", animeData);
+            hasLoaded = true;
+
+            $iframe.remove();
+        });
+
+        return new Promise((resolve, reject) => {
+            const interval = setInterval(() => {
+                if (hasLoaded || timeOut < getTimestamp()) {
+                    clearInterval(interval);
+                    resolve();
+                }
+            }, 500);
         });
     };
     
