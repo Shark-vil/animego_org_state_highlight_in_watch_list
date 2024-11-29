@@ -20,6 +20,7 @@
     const COOKIE_NAME = "animego_ext_scraper_anime_list";
     const COOKIE_SETTINGS = "animego_ext_scraper_settings";
     const HIGHLIGHT_COLOR = "#d1ecf1";
+    let OBSERVER_MONITOR_ANIME_LIST_VIEW;
     let LOADDED_LINKS = [];
     let SETTINGS = {
         scriptEnabled: true,
@@ -71,12 +72,33 @@
 
     // Следит за изменениями в списке аниме
     const monitorAnimeListChanges = () => {
-        const targetNode = document.querySelector("#anime-list-container");
-        if (!targetNode) return console.error("Контейнер аниме не найден.");
+        const observeTargetNode = () => {
+            const targetNode = document.querySelector("#anime-list-container");
+            if (!targetNode) {
+                console.error("Контейнер аниме не найден.");
+                return;
+            }
 
-        const observer = new MutationObserver(() => highlightWatchedAnime());
-        observer.observe(targetNode, { childList: true, subtree: true });
-        console.log("Наблюдатель за изменениями запущен.");
+            // Если уже есть активный наблюдатель, отключаем его
+            if (OBSERVER_MONITOR_ANIME_LIST_VIEW) {
+                OBSERVER_MONITOR_ANIME_LIST_VIEW.disconnect();
+                console.log("Предыдущий наблюдатель отключен.");
+            }
+
+            // Создаем нового наблюдателя
+            OBSERVER_MONITOR_ANIME_LIST_VIEW = new MutationObserver(() => highlightWatchedAnime());
+            OBSERVER_MONITOR_ANIME_LIST_VIEW.observe(targetNode, { childList: true, subtree: true });
+            console.log("Наблюдатель за изменениями запущен.");
+        };
+
+        // Проверяем узел с интервалом
+        setInterval(() => {
+            const targetNode = document.querySelector("#anime-list-container");
+            if (!targetNode || targetNode !== OBSERVER_MONITOR_ANIME_LIST_VIEW?.target) {
+                console.log("Перезапуск наблюдателя...");
+                observeTargetNode();
+            }
+        }, 1000);
     };
 
     // Загружает список просмотренных аниме из профиля
