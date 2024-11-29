@@ -26,4 +26,10 @@
 
 ---
 
+## Если хотите тёмную тему, используйте Dark Reader.
+
+[Dark Reader](https://darkreader.org).
+
+---
+
 ![Неко](/docs/images/footer.gif)
