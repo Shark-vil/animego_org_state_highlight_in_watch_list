@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AnimeGo Scraper - Color Indication of Viewed
 // @namespace    https://github.com/Shark-vil/animego_scraper_color_indication
-// @version      1.2.9
+// @version      1.2.10
 // @description  Скрипт для сайта AnimeGo.org, который помечает или скрывает в общем списке уже просмотренные аниме.
 // @author       Shark_vil
 // @icon         https://raw.githubusercontent.com/Shark-vil/animego_scraper_color_indication_of_viewed/refs/heads/master/icon.png
@@ -19,12 +19,12 @@
 
     const STORAGE_SETTINGS = "animego_ext_scraper_settings";
     const PROFILE_CATEGORIES = [
-        { category: 'watching', color: '#d4edda' },
-        { category: 'completed', color: '#d1ecf1' },
-        { category: 'onhold', color: '#ebeef1' },
-        { category: 'dropped', color: '#f8d7da' },
-        { category: 'planned', color: '#fff3cd' },
-        { category: 'rewatching', color: '#d1ecf1' }
+        { category: 'watching', text: "смотрю", color: '#d4edda' },
+        { category: 'completed', text: "просмотрено", color: '#d1ecf1' },
+        { category: 'onhold', text: "отложено", color: '#ebeef1' },
+        { category: 'dropped', text: "брошено", color: '#f8d7da' },
+        { category: 'planned', text: "запланировано", color: '#fff3cd' },
+        { category: 'rewatching', text: "пересматриваю", color: '#d1ecf1' }
     ];
     const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     let OBSERVER_MONITOR_ANIME_LIST_VIEW;
@@ -62,11 +62,27 @@
         console.log("Ссылки сохранены:", animeCategory);
     };
 
+    const addLinkToAnimeDataInStorage = (animeCategory, link) => {
+        const animeData = getStorage(animeCategory);
+        if (!animeData) {
+            console.error(`Данные для категории "${animeCategory}" отсутствуют или ссылки не найдены.`);
+            return;
+        }
+        animeData.links = [...new Set([...animeData.links, link])];
+        setStorage(animeCategory, animeData);
+        console.log(`Ссылка ${link} добавлена в категорию:`, animeCategory);
+    };
+    
     // Удаляет ссылку из списка
-    const removeLinkFromCookie = (animeCategory, linkToRemove) => {
-        const updatedAnimeData = getStorage(animeCategory).filter(animeData => animeData.link !== linkToRemove);
-        setStorage(animeCategory, updatedAnimeData);
-        console.log("Ссылки после удаления:", updatedAnimeData);
+    const removeLinkFromStorage = (animeCategory, linkToRemove) => {
+        const animeData = getStorage(animeCategory);
+        if (!animeData) {
+            console.error(`Данные для категории "${animeCategory}" отсутствуют или ссылки не найдены.`);
+            return;
+        }
+        animeData.links = animeData.links.filter(link => link !== linkToRemove);
+        setStorage(animeCategory, animeData);
+        console.log("Ссылки после удаления:", animeData);
     };
 
     // Генерирует общий объект ссылок, цветов и категорий на основе всех категорий
@@ -181,18 +197,19 @@
                 const iframeDocument = $iframe[0].contentDocument;
                 const $tableBody = $(iframeDocument).find('tbody[data-loaded="true"]');
         
-                if (!$tableBody.length) {
-                    console.error("Таблица с аниме не найдена.");
-                    $iframe.remove();
-                    reject(new Error("Таблица с аниме не найдена"));
-                    return;
-                }
-        
                 const animeData = {
                     category: animeCategory,
                     color: color,
                     links: []
                 };
+
+                if (!$tableBody.length) {
+                    addAnimeDataToStorage(animeCategory, animeData);
+                    console.error("Таблица с аниме не найдена.");
+                    $iframe.remove();
+                    reject(new Error("Таблица с аниме не найдена"));
+                    return;
+                }
         
                 let lastCount = 0;
         
@@ -228,8 +245,16 @@
             const buttonText = $('.my-list .text-underline-hover').text().trim();
             const animeLink = window.location.pathname;
 
-            if (buttonText.includes("Просмотрено")) addAnimeDataToStorage([animeLink]);
-            else removeLinkFromCookie(animeLink);
+            PROFILE_CATEGORIES.forEach(item => {
+                removeLinkFromStorage(item.category, animeLink);
+            });
+
+            PROFILE_CATEGORIES.forEach((item) => {
+                if (item.text === buttonText.toLowerCase()) {
+                    addLinkToAnimeDataInStorage(item.category, animeLink);
+                    return;
+                }
+            });            
         });
 
         observer.observe(targetNode, { childList: true, subtree: true });
