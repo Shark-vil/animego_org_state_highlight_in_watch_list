@@ -6,8 +6,7 @@
     "author": "Shark_vil",
     "permissions": [
       "storage",
-      "activeTab",
-      "tabs"
+      "activeTab"
     ],
     "background": {
       "service_worker": "scripts/background.js"
