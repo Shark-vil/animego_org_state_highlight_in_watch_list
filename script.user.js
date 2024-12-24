@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         Animego.org - Подсветка аниме в списке цветом
 // @namespace    https://github.com/Shark-vil/animego_org_state_highlight_in_watch_list
-// @version      1.3.5
+// @version      1.3.6
 // @description  Скрипт помечает аниме цветом состояния просмотра, а также может скрывать уже просмотренные или брошенные аниме.
 // @author       Shark_vil
 // @icon         https://raw.githubusercontent.com/Shark-vil/animego_org_state_highlight_in_watch_list/refs/heads/master/icon.png
 // @match        https://animego.org/*
+// @match        https://animego.me/*
 // @grant        none
 // @updateURL    https://github.com/Shark-vil/animego_org_state_highlight_in_watch_list/raw/refs/heads/master/script.user.js
 // @downloadURL  https://github.com/Shark-vil/animego_org_state_highlight_in_watch_list/raw/refs/heads/master/script.user.js
@@ -133,7 +134,7 @@
         }
     
         $(".animes-list-item.media").each((_, element) => {
-            const animeLink = $(element).find("a").attr("href").replace("https://animego.org", "");
+            const animeLink = $(element).find("a").attr("href").replace(window.location.origin, "");
             const matchedLink = LOADED_DATA.links.find(linkObj => linkObj.link === animeLink);
     
             if (matchedLink) {
@@ -185,7 +186,7 @@
         const username = $('a.nav-link.text-truncate[href="/profile/"]').text().trim();
         if (!username) return console.error("Имя пользователя не найдено.");
         
-        const url = `https://animego.org/user/${username}/mylist/anime/${animeCategory}`;
+        const url = `${window.location.origin}/user/${username}/mylist/anime/${animeCategory}`;
         console.log(`Загрузка списка аниме с ${url}`);
         
         const $iframe = $('<iframe>', { 
