@@ -1,12 +1,14 @@
 // ==UserScript==
 // @name         Animego.org - Подсветка аниме в списке цветом
 // @namespace    https://github.com/Shark-vil/animego_org_state_highlight_in_watch_list
-// @version      1.3.6
+// @version      1.3.7
 // @description  Скрипт помечает аниме цветом состояния просмотра, а также может скрывать уже просмотренные или брошенные аниме.
 // @author       Shark_vil
 // @icon         https://raw.githubusercontent.com/Shark-vil/animego_org_state_highlight_in_watch_list/refs/heads/master/icon.png
 // @match        https://animego.org/*
 // @match        https://animego.me/*
+// @match        https://animego.club/*
+// @match        https://animego.one/*
 // @grant        none
 // @updateURL    https://github.com/Shark-vil/animego_org_state_highlight_in_watch_list/raw/refs/heads/master/script.user.js
 // @downloadURL  https://github.com/Shark-vil/animego_org_state_highlight_in_watch_list/raw/refs/heads/master/script.user.js
